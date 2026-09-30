@@ -1,6 +1,7 @@
 import { Component, useEffect, useRef, useState } from 'react';
 import { useProgress } from '@react-three/drei';
 import Scene from './Scene';
+import logo from './assets/iokan-logo.png';
 import { layers, objectId } from './layers';
 
 const STORAGE_KEY = 'iokan-notes-v1';
@@ -22,6 +23,8 @@ class SceneBoundary extends Component {
 
 export default function App() {
   const noteElements = useRef(new Map());
+  const labelElements = useRef(new Map());
+  const [showLabels, setShowLabels] = useState(true);
   const { progress } = useProgress();
   const [view, setView] = useState('3d');
   const [exploded, setExploded] = useState(false);
@@ -58,11 +61,11 @@ export default function App() {
   const currentLayer = layers.find(l => l.id === selected?.layer);
   return <main className="app-shell">
     <header className="flex items-center justify-between border-b border-white/10 px-5 md:px-8">
-      <div className="flex items-center gap-5"><a href="./" className="wordmark" aria-label="Iokan home">iokan<span>®</span></a><span className="header-divider"/><span className="header-label">STRUCTURE STUDIES</span></div>
+      <div className="flex items-center gap-5"><a href="./" className="wordmark" aria-label="Iokan home"><img src={logo} alt="Iokan" className="brand-logo"/></a><span className="header-divider"/><span className="header-label">STRUCTURE STUDIES</span></div>
       <div className="flex items-center gap-3"><span className="status-dot"/><span className="header-label">BAMBOO / 001</span></div>
     </header>
     <section className="workspace">
-      <aside className={`sidebar ${mobilePanel ? 'mobile-open' : ''}`} aria-label="Structure layers and notes">
+      <aside className={`sidebar ${mobilePanel ? 'panel-open' : ''}`} aria-label="Structure layers and notes">
         <div className="project-intro"><p className="eyebrow">IOKAN × CASSA</p><h1>Bamboo shell<span>Structural exploration</span></h1><p className="project-description">A study in lightness.<br/>Five systems. One continuous form.</p></div>
         <div className="panel-tabs" role="tablist" aria-label="Inspector"><button role="tab" aria-selected={tab === 'layers'} aria-controls="layers-panel" id="layers-tab" onClick={() => setTab('layers')}>Layers <span>05</span></button><button role="tab" aria-selected={tab === 'notes'} aria-controls="notes-panel" id="notes-tab" onClick={() => setTab('notes')}>Notes <span>{String(notes.length).padStart(2, '0')}</span></button></div>
         {tab === 'layers' ? <div className="layer-list" id="layers-panel" role="tabpanel" aria-labelledby="layers-tab">
@@ -78,7 +81,9 @@ export default function App() {
       <section className="viewport" aria-label="Model viewer">
         <div className="scene-label"><span className="eyebrow">{view === 'top' ? '02 / PLAN' : '01 / PERSPECTIVE'}</span><span>{exploded ? 'Exploded assembly' : 'Complete assembly'}</span></div>
         <div className="view-switch" role="group" aria-label="Camera view"><button aria-pressed={view === '3d'} onClick={() => setView('3d')}><Icon name="cube"/>3D view</button><button aria-pressed={view === 'top'} onClick={() => setView('top')}><Icon name="top"/>Top view</button></div>
-        <SceneBoundary><Scene view={view} exploded={exploded} reset={reset} visibility={visibility} selected={selected} onSelect={selectObject} notes={notes} noteElements={noteElements} onReady={setCounts}/></SceneBoundary>
+        <SceneBoundary><Scene view={view} exploded={exploded} reset={reset} visibility={visibility} selected={selected} onSelect={selectObject} notes={notes} noteElements={noteElements} labelElements={labelElements} showLabels={showLabels} onReady={setCounts}/></SceneBoundary>
+        <button className="labels-toggle" aria-pressed={showLabels} onClick={() => setShowLabels(v => !v)}>{showLabels ? 'Hide layer labels' : 'Show layer labels'}</button>
+        {layers.map(layer => <div key={layer.id} ref={element => { if (element) labelElements.current.set(layer.id, element); else labelElements.current.delete(layer.id); }} className="layer-callout" style={{ display: 'none' }}><span>{layer.id}</span><span>{layer.name}</span></div>)}
         {!total && <div className="loading-overlay"><div className="loading"><span className="loading-line"/>LOADING STRUCTURE <span>{Math.round(progress)}%</span></div></div>}
         {notes.map(note => <button key={note.id} ref={element => { if (element) noteElements.current.set(note.id, element); else noteElements.current.delete(note.id); }} className="note-pin" aria-label={`Open note on ${note.objectId}`} onClick={() => selectObject(note)}>{note.number}</button>)}
         {Object.values(visibility).every(v => !v) && <div className="all-hidden">All layers are hidden.<button onClick={() => setVisibility(Object.fromEntries(layers.map(l => [l.id, true])))}>Show all layers</button></div>}
