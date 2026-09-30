@@ -27,33 +27,12 @@ function CameraRig({ view, exploded, reset }) {
   return <OrbitControls ref={controls} makeDefault enableRotate={view !== 'top'} mouseButtons={{ LEFT: view === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} touches={{ ONE: view === 'top' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }} minZoom={8} maxZoom={350} maxPolarAngle={Math.PI / 2 - 0.03} enableDamping onStart={() => { destination.current = null; }} />;
 }
 
-function Part({ entry, index, model, scale, exploded, view, visible, selected, onSelect, notes, noteElements, labelElements, showLabels }) {
+function Part({ entry, index, model, scale, exploded, visible, selected, onSelect, notes, noteElements }) {
   const group = useRef();
   const projected = useMemo(() => new THREE.Vector3(), []);
-  const labelAnchor = useMemo(() => {
-    const bounds = new THREE.Box3().setFromObject(model, true);
-    return new THREE.Vector3(bounds.max.x, (bounds.min.y + bounds.max.y) / 2, bounds.max.z);
-  }, [model]);
   useFrame(({ camera, size }, delta) => {
     group.current.position.y = THREE.MathUtils.damp(group.current.position.y, exploded ? index * 2.2 / scale : 0, 7, delta);
     group.current.updateWorldMatrix(true, false);
-    const label = labelElements.current.get(entry.id);
-    if (label) {
-      group.current.localToWorld(projected.copy(labelAnchor)).project(camera);
-      label.style.display = visible && showLabels && Math.abs(projected.z) <= 1 ? 'flex' : 'none';
-      const x = Math.max(12, Math.min(size.width - 160, (projected.x + 1) * size.width / 2));
-      const y = Math.max(165, Math.min(size.height - 135, (-projected.y + 1) * size.height / 2));
-      label.style.left = x + 'px';
-      label.dataset.targetY = String(exploded && view !== 'top' ? y : size.height / 2 + (2 - index) * 32);
-      const visibleLabels = [...layers].reverse().map(layer => labelElements.current.get(layer.id)).filter(element => element?.style.display === 'flex' && element.dataset.targetY);
-      let previous = 133;
-      const positions = visibleLabels.map(element => {
-        previous = Math.max(Number(element.dataset.targetY), previous + 32);
-        return previous;
-      });
-      const overflow = Math.max(0, previous - (size.height - 100));
-      visibleLabels.forEach((element, i) => { element.style.top = (positions[i] - overflow) + 'px'; });
-    }
     notes.forEach(note => {
       if (note.layer !== entry.id) return;
       const element = noteElements.current.get(note.id);
@@ -120,7 +99,7 @@ export default function Scene({ view, exploded, reset, ...props }) {
     <hemisphereLight args={['#d4dce1', '#494237', 1.5]} />
     <directionalLight position={[5, 14, 9]} intensity={2.3} color="#eee1c6" />
     <directionalLight position={[-12, 6, -8]} intensity={1.5} color="#b8c7d2" />
-    <Suspense fallback={null}><Structure {...props} exploded={exploded} view={view} /></Suspense>
+    <Suspense fallback={null}><Structure {...props} exploded={exploded} /></Suspense>
     <CameraRig view={view} exploded={exploded} reset={reset} />
   </Canvas>;
 }

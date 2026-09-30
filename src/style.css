@@ -15,3 +15,5 @@
 .layer-callout{position:absolute;z-index:2;align-items:center;gap:9px;pointer-events:none;font-size:10px;white-space:nowrap;background:#242424de;border:1px solid #aaa08640;border-radius:3px;padding:6px 9px;box-shadow:0 3px 14px #0002}.layer-callout>span:first-child{color:#d0bc8e;border-right:1px solid #aaa08640;padding-right:8px;font-weight:600}.layer-callout>span:last-child{color:#d5d0c2}
 @media(max-width:1000px){.labels-toggle{right:20px;top:126px}.desktop-instructions{display:none}}
 @media(max-width:640px){.brand-logo{width:42px;height:42px}.sidebar.panel-open{display:flex}.labels-toggle{right:17px;top:124px;font-size:9px}.layer-callout{font-size:9px;padding:5px 7px}.note-editor{top:166px;max-height:calc(100% - 244px)}}
+
+.collapse-sidebar{display:flex;align-items:center;gap:6px;align-self:flex-end;margin:16px 20px 0;padding:5px;color:#aaa69a;font-size:10px}.collapse-sidebar svg{width:13px;height:13px}.sidebar .project-intro{padding-top:17px}

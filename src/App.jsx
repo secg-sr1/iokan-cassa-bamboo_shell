@@ -23,8 +23,6 @@ class SceneBoundary extends Component {
 
 export default function App() {
   const noteElements = useRef(new Map());
-  const labelElements = useRef(new Map());
-  const [showLabels, setShowLabels] = useState(true);
   const { progress } = useProgress();
   const [view, setView] = useState('3d');
   const [exploded, setExploded] = useState(false);
@@ -37,7 +35,7 @@ export default function App() {
   const [tab, setTab] = useState('layers');
   const [expanded, setExpanded] = useState(null);
   const [reset, setReset] = useState(0);
-  const [mobilePanel, setMobilePanel] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState(() => window.matchMedia("(min-width: 641px)").matches);
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); setStorageError(false); } catch { setStorageError(true); }
   }, [notes]);
@@ -65,7 +63,8 @@ export default function App() {
       <div className="flex items-center gap-3"><span className="status-dot"/><span className="header-label">BAMBOO / 001</span></div>
     </header>
     <section className="workspace">
-      <aside className={`sidebar ${mobilePanel ? 'panel-open' : ''}`} aria-label="Structure layers and notes">
+      <aside id="structure-sidebar" className={`sidebar ${mobilePanel ? 'panel-open' : ''}`} aria-label="Structure layers and notes">
+        <button className="collapse-sidebar" aria-label="Collapse layers sidebar" aria-controls="structure-sidebar" onClick={() => setMobilePanel(false)}><Icon name="chevron" className="rotate-180"/><span>Collapse</span></button>
         <div className="project-intro"><p className="eyebrow">IOKAN × CASSA</p><h1>Bamboo shell<span>Structural exploration</span></h1><p className="project-description">A study in lightness.<br/>Five systems. One continuous form.</p></div>
         <div className="panel-tabs" role="tablist" aria-label="Inspector"><button role="tab" aria-selected={tab === 'layers'} aria-controls="layers-panel" id="layers-tab" onClick={() => setTab('layers')}>Layers <span>05</span></button><button role="tab" aria-selected={tab === 'notes'} aria-controls="notes-panel" id="notes-tab" onClick={() => setTab('notes')}>Notes <span>{String(notes.length).padStart(2, '0')}</span></button></div>
         {tab === 'layers' ? <div className="layer-list" id="layers-panel" role="tabpanel" aria-labelledby="layers-tab">
@@ -81,9 +80,7 @@ export default function App() {
       <section className="viewport" aria-label="Model viewer">
         <div className="scene-label"><span className="eyebrow">{view === 'top' ? '02 / PLAN' : '01 / PERSPECTIVE'}</span><span>{exploded ? 'Exploded assembly' : 'Complete assembly'}</span></div>
         <div className="view-switch" role="group" aria-label="Camera view"><button aria-pressed={view === '3d'} onClick={() => setView('3d')}><Icon name="cube"/>3D view</button><button aria-pressed={view === 'top'} onClick={() => setView('top')}><Icon name="top"/>Top view</button></div>
-        <SceneBoundary><Scene view={view} exploded={exploded} reset={reset} visibility={visibility} selected={selected} onSelect={selectObject} notes={notes} noteElements={noteElements} labelElements={labelElements} showLabels={showLabels} onReady={setCounts}/></SceneBoundary>
-        <button className="labels-toggle" aria-pressed={showLabels} onClick={() => setShowLabels(v => !v)}>{showLabels ? 'Hide layer labels' : 'Show layer labels'}</button>
-        {layers.map(layer => <div key={layer.id} ref={element => { if (element) labelElements.current.set(layer.id, element); else labelElements.current.delete(layer.id); }} className="layer-callout" style={{ display: 'none' }}><span>{layer.id}</span><span>{layer.name}</span></div>)}
+        <SceneBoundary><Scene view={view} exploded={exploded} reset={reset} visibility={visibility} selected={selected} onSelect={selectObject} notes={notes} noteElements={noteElements} onReady={setCounts}/></SceneBoundary>
         {!total && <div className="loading-overlay"><div className="loading"><span className="loading-line"/>LOADING STRUCTURE <span>{Math.round(progress)}%</span></div></div>}
         {notes.map(note => <button key={note.id} ref={element => { if (element) noteElements.current.set(note.id, element); else noteElements.current.delete(note.id); }} className="note-pin" aria-label={`Open note on ${note.objectId}`} onClick={() => selectObject(note)}>{note.number}</button>)}
         {Object.values(visibility).every(v => !v) && <div className="all-hidden">All layers are hidden.<button onClick={() => setVisibility(Object.fromEntries(layers.map(l => [l.id, true])))}>Show all layers</button></div>}
@@ -91,6 +88,6 @@ export default function App() {
         {selected && <section className="note-editor" aria-label="Object notes"><div className="flex items-center justify-between"><span className="eyebrow">ELEMENT {selected.objectId}</span><button aria-label="Close note editor" onClick={() => { setSelected(null); setDraft(''); }}><Icon name="close"/></button></div><h2>{currentLayer?.name}</h2><div className="object-notes">{notes.filter(n => n.objectId === selected.objectId).map(note => <div key={note.id}><p>{note.text}</p><button aria-label={`Delete note ${note.number}`} onClick={() => setNotes(all => all.filter(n => n.id !== note.id))}>Delete</button></div>)}</div><form onSubmit={saveNote}><label htmlFor="note-text">Add an observation</label><textarea id="note-text" rows="3" maxLength="2000" placeholder="A connection, a detail, a question…" value={draft} onChange={e => setDraft(e.target.value)}/><div className="flex items-center justify-between gap-3"><span className="note-local">{storageError ? 'Not saved locally' : 'Stored in this browser'}</span><button type="submit" disabled={!draft.trim()} className="save-note">Save note <span>↗</span></button></div></form></section>}
       </section>
     </section>
-    <footer><span><span className="status-dot"/>{total ? 'MODEL READY' : 'LOADING MODEL'}<span className="footer-detail"> / {String(total).padStart(3, '0')} ELEMENTS</span></span><span className="desktop-instructions">{view === 'top' ? 'DRAG TO PAN' : 'DRAG TO ORBIT'}<i/>SCROLL TO ZOOM<i/>CLICK TO ANNOTATE</span><button className="mobile-panel-toggle" aria-expanded={mobilePanel} onClick={() => setMobilePanel(v => !v)}>{mobilePanel ? 'Close panel' : 'Layers & notes'} <span>{mobilePanel ? '−' : '+'}</span></button><span className="footer-detail">IOKAN — CASSA</span></footer>
+    <footer><span><span className="status-dot"/>{total ? 'MODEL READY' : 'LOADING MODEL'}<span className="footer-detail"> / {String(total).padStart(3, '0')} ELEMENTS</span></span><span className="desktop-instructions">{view === 'top' ? 'DRAG TO PAN' : 'DRAG TO ORBIT'}<i/>SCROLL TO ZOOM<i/>CLICK TO ANNOTATE</span><button className="mobile-panel-toggle" aria-controls="structure-sidebar" aria-expanded={mobilePanel} onClick={() => setMobilePanel(v => !v)}>{mobilePanel ? 'Close panel' : 'Layers & notes'} <span>{mobilePanel ? '−' : '+'}</span></button><span className="footer-detail">IOKAN — CASSA</span></footer>
   </main>;
 }
