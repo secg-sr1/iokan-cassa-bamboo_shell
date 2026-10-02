@@ -1,0 +1,11 @@
+import {useMemo,useEffect,useRef} from 'react';
+import * as T from 'three';
+import {ringDetail,ringPath,strapStations} from './ring-detail';
+export default function RingDetail({member,parameters,onSelect,selected}){
+ const detail=ringDetail(parameters),unit=parameters.unitScale>0?parameters.unitScale:1,radius=detail.diameter/2000/unit,straps=useRef();
+ const geometry=useMemo(()=>{const path=ringPath(member),steps=Math.max(64,member.points.length*3),core=new T.TubeGeometry(path,steps,radius,24,false),frames=path.computeFrenetFrames(steps,false),lines=[];for(let j=0;j<24;j++){const angle=j*Math.PI*2/24;for(let i=0;i<steps;i++)for(const n of [i,i+1]){const p=path.getPointAt(n/steps).addScaledVector(frames.normals[n],Math.cos(angle)*radius*1.003).addScaledVector(frames.binormals[n],Math.sin(angle)*radius*1.003);lines.push(...p.toArray());}}const grooves=new T.BufferGeometry();grooves.setAttribute('position',new T.Float32BufferAttribute(lines,3));const r=radius+detail.thickness/1000/unit,w=detail.width/2000/unit;const strap=new T.LatheGeometry([new T.Vector2(radius,-w),new T.Vector2(r,-w),new T.Vector2(r,w),new T.Vector2(radius,w),new T.Vector2(radius,-w)],24);return {core,grooves,strap};},[member,radius,detail.thickness,detail.width,unit]);
+ const stations=useMemo(()=>strapStations(member,parameters),[member,detail.spacing,unit]);
+ useEffect(()=>()=>Object.values(geometry).forEach(g=>g.dispose()),[geometry]);
+ useEffect(()=>{const dummy=new T.Object3D();stations.forEach((s,i)=>{dummy.position.fromArray(s.point);dummy.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(...s.tangent));dummy.updateMatrix();straps.current.setMatrixAt(i,dummy.matrix);});straps.current.instanceMatrix.needsUpdate=true;straps.current.computeBoundingSphere();},[stations,geometry]);
+ return <group onClick={e=>{e.stopPropagation();if(e.delta<5)onSelect(member.id);}}><mesh geometry={geometry.core}><meshStandardMaterial color="#cdb887" roughness={.88} emissive={selected?'#6c5428':'#000'}/></mesh><lineSegments geometry={geometry.grooves}><lineBasicMaterial color="#78684a"/></lineSegments><instancedMesh ref={straps} args={[geometry.strap,null,stations.length]}><meshStandardMaterial color="#a7adb0" metalness={.85} roughness={.32} side={T.DoubleSide}/></instancedMesh></group>;
+}

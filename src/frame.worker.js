@@ -1,0 +1,2 @@
+import {solveFrame} from './frame-solver.js';
+self.onmessage=({data})=>{try{const {network,parameters,compare}=data;const cases=compare?['rigid','pinned']:[parameters.joint];for(const joint of cases){self.postMessage({type:'progress',joint});const result=solveFrame(network,{...parameters,joint});self.postMessage({type:'result',joint,result});}self.postMessage({type:'done'});}catch(error){self.postMessage({type:'error',error:error.message});}};

@@ -1,5 +1,7 @@
 # Iokan / Bamboo shell
 
+**Current work is an unpublished local sandbox.** See [SANDBOX.md](SANDBOX.md) for the refreshed six-layer import, generated column axes, trial member solver, assumptions, and limitations. The description below documents the earlier published viewer.
+
 A minimal React + Vite viewer for the five GLB models in `models/`, using Three.js, React Three Fiber, Drei, and Tailwind CSS. Charcoal (`#2b2b2b`), restrained typography, muted bamboo, and cool directional lighting keep the environment sober.
 
 ## Run
@@ -47,3 +49,6 @@ Notes are stored in this browser's `localStorage` under `iokan-notes-v1`. They a
 ## Validation
 
 Production build and browser checks cover loading all 211 meshes, both camera presets, exploded assembly, layer controls, note creation/persistence/deletion, and a 390px mobile viewport. The Three.js bundle is large enough to trigger Vite's advisory chunk-size warning.
+
+## Whole-structure workspace
+See [WHOLE-STRUCTURE.md](WHOLE-STRUCTURE.md) for the connected frame solver, rigid/pinned comparison, full-form and layout parameters, reconstruction assumptions, and verification. This remains local and unpublished.

@@ -1,10 +1,15 @@
-import { Component, useEffect, useRef, useState } from 'react';
+import { Component, useEffect, useMemo, useRef, useState } from 'react';
 import { useProgress } from '@react-three/drei';
 import Scene from './Scene';
+import AnalysisPanel from './AnalysisPanel';
+import VariationPanel from './VariationPanel';
+import { baseVariation, varyColumns, metricValue, metrics } from './variations';
+import columns from './generated/columns.json';
+import { defaults, solveColumns } from './solver';
 import logo from './assets/iokan-logo.png';
 import { layers, objectId } from './layers';
 
-const STORAGE_KEY = 'iokan-notes-v1';
+const STORAGE_KEY = 'iokan-notes-models-2026-10-v2';
 function loadNotes() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -25,6 +30,16 @@ export default function App() {
   const noteElements = useRef(new Map());
   const { progress } = useProgress();
   const [view, setView] = useState('3d');
+  const [parameters, setParameters] = useState({ ...defaults, materialId: 'custom' });
+  const [variation, setVariation] = useState(baseVariation);
+  const [metric, setMetric] = useState('displacement');
+  const [snapshots, setSnapshots] = useState(() => { try { const value = JSON.parse(localStorage.getItem('iokan-variations-v1') || '[]'); return Array.isArray(value) ? value.filter(s => s && typeof s.id === 'string' && typeof s.name === 'string' && ['width','depth','height'].every(k => Number.isFinite(s.variation?.[k]) && s.variation[k] >= 0.6 && s.variation[k] <= 1.5) && !solveColumns(columns, s.parameters || {}).error && Number.isFinite(s.displacement) && Number.isFinite(s.stress)).slice(-8) : []; } catch { return []; } });
+  const [snapshotError, setSnapshotError] = useState(false);
+  useEffect(() => { try { localStorage.setItem('iokan-variations-v1', JSON.stringify(snapshots)); setSnapshotError(false); } catch { setSnapshotError(true); } }, [snapshots]);
+  const variedColumns = useMemo(() => varyColumns(columns, variation), [variation]);
+  const [display, setDisplay] = useState('overlay');
+  const [confirmed, setConfirmed] = useState(false);
+  const result = useMemo(() => solveColumns(variedColumns, parameters), [variedColumns, parameters]);
   const [exploded, setExploded] = useState(false);
   const [visibility, setVisibility] = useState(Object.fromEntries(layers.map(l => [l.id, true])));
   const [counts, setCounts] = useState({});
@@ -32,7 +47,7 @@ export default function App() {
   const [notes, setNotes] = useState(loadNotes);
   const [draft, setDraft] = useState('');
   const [storageError, setStorageError] = useState(false);
-  const [tab, setTab] = useState('layers');
+  const [tab, setTab] = useState('analysis');
   const [expanded, setExpanded] = useState(null);
   const [reset, setReset] = useState(0);
   const [mobilePanel, setMobilePanel] = useState(() => window.matchMedia("(min-width: 641px)").matches);
@@ -60,14 +75,14 @@ export default function App() {
   return <main className="app-shell">
     <header className="flex items-center justify-between border-b border-white/10 px-5 md:px-8">
       <div className="flex items-center gap-5"><a href="./" className="wordmark" aria-label="Iokan home"><img src={logo} alt="Iokan" className="brand-logo"/></a><span className="header-divider"/><span className="header-label">STRUCTURE STUDIES</span></div>
-      <div className="flex items-center gap-3"><span className="status-dot"/><span className="header-label">BAMBOO / 001</span></div>
+      <div className="flex items-center gap-3"><span className="status-dot"/><span className="header-label">SANDBOX / LOCAL</span></div>
     </header>
     <section className="workspace">
       <aside id="structure-sidebar" className={`sidebar ${mobilePanel ? 'panel-open' : ''}`} aria-label="Structure layers and notes">
         <button className="collapse-sidebar" aria-label="Collapse layers sidebar" aria-controls="structure-sidebar" onClick={() => setMobilePanel(false)}><Icon name="chevron" className="rotate-180"/><span>Collapse</span></button>
-        <div className="project-intro"><p className="eyebrow">IOKAN × CASSA</p><h1>Bamboo shell<span>Structural exploration</span></h1><p className="project-description">A study in lightness.<br/>Five systems. One continuous form.</p></div>
-        <div className="panel-tabs" role="tablist" aria-label="Inspector"><button role="tab" aria-selected={tab === 'layers'} aria-controls="layers-panel" id="layers-tab" onClick={() => setTab('layers')}>Layers <span>05</span></button><button role="tab" aria-selected={tab === 'notes'} aria-controls="notes-panel" id="notes-tab" onClick={() => setTab('notes')}>Notes <span>{String(notes.length).padStart(2, '0')}</span></button></div>
-        {tab === 'layers' ? <div className="layer-list" id="layers-panel" role="tabpanel" aria-labelledby="layers-tab">
+        <div className="project-intro"><p className="eyebrow">IOKAN × CASSA</p><h1>Bamboo shell<span>Structural exploration</span></h1><p className="project-description">A study in lightness.<br/>Six layers. An evolving structural study.</p></div>
+        <div className="panel-tabs" role="tablist" aria-label="Inspector"><button role="tab" aria-selected={tab === 'layers'} aria-controls="layers-panel" id="layers-tab" onClick={() => setTab('layers')}>Layers <span>06</span></button><button role="tab" aria-selected={tab === 'analysis'} aria-controls="analysis-panel" id="analysis-tab" onClick={() => setTab('analysis')}>Study</button><button role="tab" id="variation-tab" aria-controls="variation-panel" aria-selected={tab === "variation"} onClick={() => setTab("variation")}>Form</button><button role="tab" aria-selected={tab === 'notes'} aria-controls="notes-panel" id="notes-tab" onClick={() => setTab('notes')}>Notes <span>{String(notes.length).padStart(2, '0')}</span></button></div>
+        {tab === 'variation' ? <VariationPanel variation={variation} setVariation={setVariation} parameters={parameters} result={result} snapshots={snapshots} setSnapshots={setSnapshots} storageError={snapshotError} restore={snapshot => { setVariation(snapshot.variation); setParameters(snapshot.parameters); }}/> : tab === 'analysis' ? <AnalysisPanel parameters={parameters} setParameters={setParameters} result={result} display={display} setDisplay={setDisplay} confirmed={confirmed} setConfirmed={setConfirmed} metric={metric} setMetric={setMetric} variation={variation} columns={variedColumns}/> : tab === 'layers' ? <div className="layer-list" id="layers-panel" role="tabpanel" aria-labelledby="layers-tab">
           <div className="list-caption"><span>ASSEMBLY INDEX</span><span>{total || '—'} ELEMENTS</span></div>
           {[...layers].reverse().map(layer => <div className={`layer ${!visibility[layer.id] ? 'is-hidden' : ''}`} key={layer.id}>
             <div className="layer-row"><button className="layer-title" aria-expanded={expanded === layer.id} onClick={() => setExpanded(expanded === layer.id ? null : layer.id)}><span className="layer-index">{layer.id}</span><span>{layer.name}<small>{counts[layer.id] ?? '—'} elements</small></span><Icon name="chevron" className={expanded === layer.id ? 'rotate-90' : ''}/></button><button className="visibility-button" aria-label={`${visibility[layer.id] ? 'Hide' : 'Show'} ${layer.name}`} aria-pressed={visibility[layer.id]} onClick={() => setVisibility(v => ({ ...v, [layer.id]: !v[layer.id] }))}><Icon name="eye"/>{!visibility[layer.id] && <span className="eye-slash"/>}</button></div>
@@ -79,13 +94,16 @@ export default function App() {
       </aside>
       <section className="viewport" aria-label="Model viewer">
         <div className="scene-label"><span className="eyebrow">{view === 'top' ? '02 / PLAN' : '01 / PERSPECTIVE'}</span><span>{exploded ? 'Exploded assembly' : 'Complete assembly'}</span></div>
+        <button className="results-launch" onClick={() => { setConfirmed(true); setDisplay("results"); }}>Show results on model</button>
+        <button className="study-launch" onClick={() => { setTab("analysis"); setMobilePanel(true); }}>Column study ↗</button>
         <div className="view-switch" role="group" aria-label="Camera view"><button aria-pressed={view === '3d'} onClick={() => setView('3d')}><Icon name="cube"/>3D view</button><button aria-pressed={view === 'top'} onClick={() => setView('top')}><Icon name="top"/>Top view</button></div>
-        <SceneBoundary><Scene view={view} exploded={exploded} reset={reset} visibility={visibility} selected={selected} onSelect={selectObject} notes={notes} noteElements={noteElements} onReady={setCounts}/></SceneBoundary>
+        <SceneBoundary><Scene view={view} exploded={exploded} reset={reset} visibility={visibility} selected={selected} onSelect={selectObject} notes={notes} noteElements={noteElements} display={display} result={result} parameters={parameters} confirmed={confirmed} variation={variation} columns={variedColumns} metric={metric} onReady={setCounts}/></SceneBoundary>
         {!total && <div className="loading-overlay"><div className="loading"><span className="loading-line"/>LOADING STRUCTURE <span>{Math.round(progress)}%</span></div></div>}
         {notes.map(note => <button key={note.id} ref={element => { if (element) noteElements.current.set(note.id, element); else noteElements.current.delete(note.id); }} className="note-pin" aria-label={`Open note on ${note.objectId}`} onClick={() => selectObject(note)}>{note.number}</button>)}
+        {display !== 'solids' && <div className="study-legend">{(display === 'results' || display === 'deformed') && confirmed && !result.error ? <><span>{metrics[metric].label} · trial columns only</span><div className="heat-scale"/><div className="heat-range"><span>0 {metrics[metric].unit}</span><span>{Math.max(0, ...result.members.map(m => metricValue(m, metric))).toFixed(2)} {metrics[metric].unit}</span></div><small>Scale resets per variation · Blue → amber = lower → higher</small><small>{display === 'deformed' ? 'Deformation ×' + Math.max(0, Math.min(1000, parameters.amplification || 0)) : 'Column color shows member maximum; shell not analyzed'}</small>{result.outOfDomain && <small className="invalid-study">Outside linear screening range — not a valid prediction</small>}</> : <><span className="axis-swatch"/>Inferred bamboo column axes<small>Gold dots: assumed fixed bases · Shell not analyzed</small></>}</div>}
         {Object.values(visibility).every(v => !v) && <div className="all-hidden">All layers are hidden.<button onClick={() => setVisibility(Object.fromEntries(layers.map(l => [l.id, true])))}>Show all layers</button></div>}
         <div className="viewport-bottom"><div className="orientation"><span>N</span><svg viewBox="0 0 48 48" width="42" height="42" aria-hidden="true"><path d="M24 4v40M4 24h40M24 4l-3 8h6z" fill="none" stroke="currentColor" strokeWidth="1"/></svg></div><div className="scene-actions"><button className={`explode-button ${exploded ? 'active' : ''}`} aria-pressed={exploded} onClick={() => setExploded(e => !e)}><Icon name="explode"/>{exploded ? 'Assemble view' : 'Explode view'}<span>{exploded ? '−' : '+'}</span></button><button className="reset-button" aria-label="Reset camera" onClick={() => setReset(r => r + 1)}><Icon name="reset"/></button></div><span className="scale-caption">{view === 'top' ? 'ORTHOGRAPHIC' : 'SPATIAL STUDY'}<span className="scale-line"/></span></div>
-        {selected && <section className="note-editor" aria-label="Object notes"><div className="flex items-center justify-between"><span className="eyebrow">ELEMENT {selected.objectId}</span><button aria-label="Close note editor" onClick={() => { setSelected(null); setDraft(''); }}><Icon name="close"/></button></div><h2>{currentLayer?.name}</h2><div className="object-notes">{notes.filter(n => n.objectId === selected.objectId).map(note => <div key={note.id}><p>{note.text}</p><button aria-label={`Delete note ${note.number}`} onClick={() => setNotes(all => all.filter(n => n.id !== note.id))}>Delete</button></div>)}</div><form onSubmit={saveNote}><label htmlFor="note-text">Add an observation</label><textarea id="note-text" rows="3" maxLength="2000" placeholder="A connection, a detail, a question…" value={draft} onChange={e => setDraft(e.target.value)}/><div className="flex items-center justify-between gap-3"><span className="note-local">{storageError ? 'Not saved locally' : 'Stored in this browser'}</span><button type="submit" disabled={!draft.trim()} className="save-note">Save note <span>↗</span></button></div></form></section>}
+        {selected && <section className="note-editor" aria-label="Object notes"><div className="flex items-center justify-between"><span className="eyebrow">ELEMENT {selected.objectId}</span><button aria-label="Close note editor" onClick={() => { setSelected(null); setDraft(''); }}><Icon name="close"/></button></div><h2>{currentLayer?.name}</h2><div className="object-notes">{confirmed && !result.error && result.members.find(m => m.id === selected.objectId) && (() => { const m = result.members.find(m => m.id === selected.objectId); return <div className="selected-result"><strong>Bamboo · {m.L.toFixed(2)} m</strong><p>Tip δ {(m.magnitude * 1000).toFixed(2)} mm<br/>Peak stress {(m.stress / 1e6).toFixed(2)} MPa<br/>Compression / Euler {m.bucklingRatio.toFixed(3)}</p></div>; })()}{notes.filter(n => n.objectId === selected.objectId).map(note => <div key={note.id}><p>{note.text}</p><button aria-label={`Delete note ${note.number}`} onClick={() => setNotes(all => all.filter(n => n.id !== note.id))}>Delete</button></div>)}</div><form onSubmit={saveNote}><label htmlFor="note-text">Add an observation</label><textarea id="note-text" rows="3" maxLength="2000" placeholder="A connection, a detail, a question…" value={draft} onChange={e => setDraft(e.target.value)}/><div className="flex items-center justify-between gap-3"><span className="note-local">{storageError ? 'Not saved locally' : 'Stored in this browser'}</span><button type="submit" disabled={!draft.trim()} className="save-note">Save note <span>↗</span></button></div></form></section>}
       </section>
     </section>
     <footer><span><span className="status-dot"/>{total ? 'MODEL READY' : 'LOADING MODEL'}<span className="footer-detail"> / {String(total).padStart(3, '0')} ELEMENTS</span></span><span className="desktop-instructions">{view === 'top' ? 'DRAG TO PAN' : 'DRAG TO ORBIT'}<i/>SCROLL TO ZOOM<i/>CLICK TO ANNOTATE</span><button className="mobile-panel-toggle" aria-controls="structure-sidebar" aria-expanded={mobilePanel} onClick={() => setMobilePanel(v => !v)}>{mobilePanel ? 'Close panel' : 'Layers & notes'} <span>{mobilePanel ? '−' : '+'}</span></button><span className="footer-detail">IOKAN — CASSA</span></footer>

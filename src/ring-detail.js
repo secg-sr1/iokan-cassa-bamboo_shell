@@ -1,0 +1,10 @@
+import * as T from 'three';
+export const ringDetailDefaults={enabled:false,boundaryEnabled:false,diameter:350,spacing:250,width:25,thickness:1.5};
+export const isDetailRing=m=>['04.001','04.002','04.005'].includes(m.id);
+export const hasBundleDetail=p=>!!(p.ringDetail?.enabled||p.ringDetail?.boundaryEnabled);
+export const usesBundleDetail=(m,p)=>isDetailRing(m)?!!p.ringDetail?.enabled:['04.003','04.004'].includes(m.id)&&!!p.ringDetail?.boundaryEnabled;
+export function ringDetail(parameters){const d={...ringDetailDefaults,...parameters.ringDetail};return {...d,diameter:Math.max(200,Math.min(800,+d.diameter||350)),spacing:Math.max(100,Math.min(1000,+d.spacing||250)),width:Math.max(10,Math.min(80,+d.width||25)),thickness:Math.max(.5,Math.min(5,+d.thickness||1.5))};}
+export function ringPath(member){const path=new T.CurvePath();for(let i=1;i<member.points.length;i++)path.add(new T.LineCurve3(new T.Vector3(...member.points[i-1]),new T.Vector3(...member.points[i])));return path;}
+export function strapStations(member,parameters){const d=ringDetail(parameters),unit=parameters.unitScale;if(!(unit>0))return [];const path=ringPath(member),length=path.getLength(),count=Math.max(1,Math.ceil(length*unit*1000/d.spacing));return Array.from({length:count},(_,i)=>{const t=(i+.5)/count;return {point:path.getPointAt(t).toArray(),tangent:path.getTangentAt(t).normalize().toArray()};});}
+export function detailExportMembers(members,parameters){const detail=ringDetail(parameters);if(!hasBundleDetail(parameters))return members;const unit=parameters.unitScale;
+ return members.flatMap(m=>{if(!usesBundleDetail(m,parameters))return [m];const radius=detail.diameter/2,half=detail.width/2000/unit;return [{...m,exportSection:[detail.diameter,0],exportDescription:'Bundled bamboo envelope; internal strips not modeled'},...strapStations(m,parameters).map((s,i)=>({id:`${m.id}.S${String(i+1).padStart(4,'0')}`,layer:m.layer,points:[-1,1].map(sign=>s.point.map((v,k)=>v+sign*half*s.tangent[k])),exportSection:[2*(radius+detail.thickness),detail.thickness],exportMaterial:'Stainless steel (concept)',exportDescription:'Steel strap; buckle and fastening not modeled'}))];});}
