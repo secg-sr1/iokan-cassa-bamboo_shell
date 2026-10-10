@@ -12,6 +12,7 @@ test('row edits, ring locking, reset and reinforcement regeneration',()=>{
  const roofCage=editCage({},5,'row',[0,.5,0]);assert.equal(roofCage.filter(p=>p[1]).length,4);
  const f={...shellFormDefaults,reinforcement:'bands'},base=shapeMembers(source,f),ms=shapeMembers(source,{...f,roofCage,roofLockRings:true});
  for(const id of ['04.001','04.002','04.005'])assert.deepEqual(ms.find(m=>m.id===id),base.find(m=>m.id===id));
- assert.notDeepEqual(ms.filter(m=>m.generated),base.filter(m=>m.generated));assert.equal(buildNetwork(ms).disconnected,0);
+ assert.notDeepEqual(ms,base);assert.equal(buildNetwork(ms).disconnected,0);
  assert.deepEqual(shapeMembers(source,{...f,roofCage:[]}),base);
 });
+

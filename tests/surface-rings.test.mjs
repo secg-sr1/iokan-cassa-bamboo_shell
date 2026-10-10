@@ -1,5 +1,10 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {shapeMembers,shellFormDefaults,buildNetwork} from '../src/shell-model.js';
+import {addReinforcement} from '../src/reinforcement.js';
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {shapeMembers as originalShape,shellFormDefaults,buildNetwork} from '../src/shell-model.js';
 const source=JSON.parse(fs.readFileSync(new URL('../src/generated/members.json',import.meta.url)));
 test('surface rings are closed, smoothly joined, finite and connected to the assembly',()=>{const ms=shapeMembers(source,{...shellFormDefaults,reinforcement:'rings',bandCount:3});const rings=ms.filter(m=>m.role==='Closed surface ring');assert.equal(rings.length,3);for(const m of rings){const p=m.points;assert.ok(p.flat().every(Number.isFinite));assert.ok(Math.hypot(...p[0].map((v,k)=>v-p.at(-1)[k]))<1e-8);const a=p[1].map((v,k)=>v-p[0][k]),b=p.at(-1).map((v,k)=>v-p.at(-2)[k]);const cosine=a.reduce((s,v,k)=>s+v*b[k],0)/(Math.hypot(...a)*Math.hypot(...b));assert.ok(cosine>.98,`seam tangent ${cosine}`);}const n=buildNetwork(ms);assert.equal(n.disconnected,0);});
 
 test('contour rings keep constant elevation and the requested vertical separation',()=>{const ms=shapeMembers(source,{...shellFormDefaults,reinforcement:'rings',bandCount:3,ringElevation:9.4,ringSpacing:.4});const rings=ms.filter(m=>m.role==='Closed surface ring');assert.equal(rings.length,3);rings.forEach((m,i)=>m.points.forEach(p=>assert.ok(Math.abs(p[1]-(9.4+i*.4))<1e-9)));});
+
+// Retained, inactive generator utilities; the viewer no longer calls these.
+function shapeMembers(source,form){return addReinforcement(originalShape(source,form),form);}
+

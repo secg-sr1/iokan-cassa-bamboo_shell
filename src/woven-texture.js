@@ -1,0 +1,3 @@
+import * as T from 'three';
+let texture;
+export function wovenTexture(){if(texture)return texture;const c=document.createElement('canvas');c.width=256;c.height=256;const g=c.getContext('2d');g.fillStyle='#514a30';g.fillRect(0,0,256,256);for(let row=0;row<32;row++){g.strokeStyle=['#9a9160','#b2a875','#827c4d','#afa16e'][row%4];g.lineWidth=5;g.beginPath();for(let x=0;x<=256;x+=4){const y=row*8+Math.sin(x*.12+row)*1.2; x?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}for(let x=0;x<256;x+=32){for(let y=0;y<256;y+=16){g.fillStyle=(y/16+x/32)%2?'#d0bd8a':'#716444';g.fillRect(x,y,3,9);}}texture=new T.CanvasTexture(c);texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(1,1);texture.anisotropy=8;texture.colorSpace=T.SRGBColorSpace;return texture;}

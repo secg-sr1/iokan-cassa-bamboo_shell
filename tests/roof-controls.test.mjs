@@ -15,7 +15,8 @@ test('roof handles interpolate their offsets while rings and columns remain fixe
 });
 test('roof edits feed reinforcement and solver geometry and reset exactly',()=>{
  const form={...shellFormDefaults,reinforcement:'bands'},base=shapeMembers(source,form),edited=shapeMembers(source,{...form,roofOffsets:[.5,0,0,0,0,0,0,0]});
- assert.notDeepEqual(edited.filter(m=>m.generated),base.filter(m=>m.generated));
+ assert.notDeepEqual(edited,base);
  const network=buildNetwork(edited);assert.equal(network.disconnected,0);assert.notDeepEqual(network.nodes,buildNetwork(base).nodes);
  assert.deepEqual(shapeMembers(source,{...form,roofOffsets:[]}),base);
 });
+

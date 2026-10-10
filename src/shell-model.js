@@ -1,3 +1,5 @@
+import {towerFrame} from './tower-frame.js';
+import {coveringDefaults} from './roof-covering.js';
 import {rebuildBoundary} from './rebuild-boundary.js';
 import {applyCage,cageDefaults} from './roof-cage.js';
 import {applyRoofControls,roofDefaults} from './roof-controls.js';
@@ -6,7 +8,7 @@ import {applyBoundaryControls,boundaryDefaults,straightenColumns} from './bounda
 import {applyRingControls,ringFormDefaults} from './rings.js';
 // Geometric inference only: proximity joints must be reviewed against construction details.
 export const shellDefaults={unitScale:1,modulus:12,shearModulus:0.8,density:700,roofLoad:0.25,wind:0,selfWeight:true,joint:'rigid',tolerance:0.25,amplification:20,materialId:'custom',sections:{'01':[200,20],'02':[200,20],'03':[150,15],'04':[200,20],'05':[100,10],'06':[100,10]}};
-export const shellFormDefaults={width:1,depth:1,height:1,rise:0,twist:0,supportSpread:1,innerSpacing:1,outerSpacing:1,supports:'all',...cageDefaults,...roofDefaults,...ringFormDefaults,...boundaryDefaults,...reinforcementDefaults};
+export const shellFormDefaults={width:1,depth:1,height:1,rise:0,twist:0,supportSpread:1,innerSpacing:1,outerSpacing:1,supports:'all',...coveringDefaults,...cageDefaults,...roofDefaults,...ringFormDefaults,...boundaryDefaults,...reinforcementDefaults,coveringEnabled:true,coveringMode:'woven',coveringColorByLength:false,coveringOpacity:1};
 const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(a,s)=>a.map(v=>v*s),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
 export const distance=(a,b)=>Math.hypot(...sub(a,b));
 export function shapeMembers(source,form){
@@ -17,7 +19,7 @@ export function shapeMembers(source,form){
  const spread=Number(m.layer)<=2?1+(form.supportSpread-1)*(1-h):1;
  return [cx+(x*Math.cos(t)-z*Math.sin(t))*spread,lo[1]+(p[1]-lo[1])*form.height+form.rise*crown*h,cz+(x*Math.sin(t)+z*Math.cos(t))*spread];
  })}));
- return addReinforcement(straightenColumns(rebuildBoundary(applyCage(applyRoofControls(applyRingControls(applyBoundaryControls(shaped,form),form),form),form),form)),form);
+ return towerFrame(straightenColumns(rebuildBoundary(applyCage(applyRoofControls(applyRingControls(applyBoundaryControls(shaped,form),form),form),form),form)),form.towerFrame);
 }
 function simplify(ps,tol=.06){
  if(ps.length<3)return ps;const a=ps[0],b=ps.at(-1),ab=sub(b,a),d=dot(ab,ab);let max=0,index=0;
@@ -46,3 +48,5 @@ export function buildNetwork(members,tolerance=.25){
  const disconnected=elements.filter(e=>!reach.has(e.a));
  return {nodes,elements,supports:[...supported],inferred,maxGap,disconnected:disconnected.length,disconnectedMembers:[...new Set(disconnected.map(e=>e.member))],members:members.map(m=>({id:m.id,layer:m.layer,repaired:m.repaired,generated:m.generated,role:m.role})),segmentCount:segs.length};
 }
+
+

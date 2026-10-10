@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {solveFlow} from '../src/potential-flow.js';
+test('empty domain preserves uniform flow and converges',()=>{const r=solveFlow([[0,0,0],[10,10,10]],[],[1,0,0],16);assert.ok(r.converged);assert.ok(r.lines.length>0);assert.ok(r.ratios.every(v=>Math.abs(v-1)<1e-8));});
+test('solid plane modifies numerical flow without nonfinite output',()=>{const r=solveFlow([[5,2,2],[5,8,2],[5,8,8],[5,2,8],[0,0,0],[10,10,10]],[0,1,2,0,2,3],[1,0,0],18);assert.ok(r.lines.every(Number.isFinite));assert.ok(r.ratios.some(v=>Math.abs(v-1)>.05));assert.ok(r.residual<.01);});
+
+test('flow animation has finite travel coordinates for every line vertex',()=>{const r=solveFlow([[0,0,0],[10,10,10]],[],[1,0,0],16);assert.equal(r.travel.length,r.lines.length/3);assert.ok(r.travel.every(Number.isFinite));for(let i=0;i<r.travel.length;i+=2)assert.ok(r.travel[i+1]>r.travel[i]);assert.ok(r.size>0);});
+test('density and domain controls change trajectories and uniform Cp stays neutral',()=>{const v=[[0,0,0],[10,10,10]],a=solveFlow(v,[],[1,0,0],16,{trailDensity:8,regionScale:1.5}),b=solveFlow(v,[],[1,0,0],16,{trailDensity:16,regionScale:2});assert.ok(b.lines.length>a.lines.length);assert.equal(a.size,15);assert.equal(b.size,20);assert.ok(b.surfaceCp.every(v=>Math.abs(v)<1e-8));});

@@ -13,7 +13,7 @@ function CameraRig({ view, exploded, reset, variation }) {
   useEffect(() => {
     const target = new THREE.Vector3(0, exploded ? 5.5 : 0, 0);
     const position = view === 'top' ? new THREE.Vector3(0, 35, 0.001) : new THREE.Vector3(18, 13, 22).add(target);
-    destination.current = { position, target, zoom: Math.min(size.width / 13, size.height / (exploded && view !== 'top' ? 21 : 10)) / Math.max(variation.width, variation.depth, variation.height) };
+    position.sub(target).setLength((exploded?32:18)*Math.max(variation.width,variation.depth,variation.height)/Math.min(1,size.width/size.height)).add(target); destination.current = { position, target, zoom:1 };
   }, [camera, view, exploded, reset, size.width, size.height, variation]);
   useFrame((_, delta) => {
     if (!destination.current || !controls.current) return;
@@ -26,7 +26,7 @@ function CameraRig({ view, exploded, reset, variation }) {
     controls.current.update();
     if (camera.position.distanceTo(position) < 0.01 && Math.abs(camera.zoom - zoom) < 0.01) destination.current = null;
   });
-  return <OrbitControls ref={controls} makeDefault enableRotate={view !== 'top'} mouseButtons={{ LEFT: view === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} touches={{ ONE: view === 'top' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }} minZoom={8} maxZoom={350} maxPolarAngle={Math.PI / 2 - 0.03} enableDamping onStart={() => { destination.current = null; }} />;
+  return <OrbitControls ref={controls} makeDefault enableRotate={view !== 'top'} mouseButtons={{ LEFT: view === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} touches={{ ONE: view === 'top' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }} minDistance={3} maxDistance={160} maxPolarAngle={Math.PI / 2 - 0.03} enableDamping onStart={() => { destination.current = null; }} />;
 }
 
 function Part({ entry, index, model, scale, exploded, visible, selected, onSelect, notes, noteElements, center, baseCenter, display, result, parameters, confirmed, columns, variation, metric }) {
@@ -108,7 +108,7 @@ function Structure({ onReady, ...props }) {
 }
 
 export default function Scene({ view, exploded, reset, ...props }) {
-  return <Canvas orthographic camera={{ position: [18, 13, 22], zoom: 55, near: 0.1, far: 200 }} dpr={[1, 1.75]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }} aria-label="Interactive bamboo structure. Select a component to add a note." fallback={<div className="scene-error">WebGL is unavailable. Open this viewer in a browser with hardware acceleration enabled.</div>}>
+  return <Canvas camera={{ position: [18, 13, 22], fov: 45, near: 0.1, far: 200 }} dpr={[1, 1.75]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }} aria-label="Interactive bamboo structure. Select a component to add a note." fallback={<div className="scene-error">WebGL is unavailable. Open this viewer in a browser with hardware acceleration enabled.</div>}>
     <color attach="background" args={['#2b2b2b']} />
     <ambientLight intensity={0.65} />
     <hemisphereLight args={['#d4dce1', '#494237', 1.5]} />
